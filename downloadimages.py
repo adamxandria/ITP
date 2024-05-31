@@ -27,7 +27,7 @@ session.mount('https://', HTTPAdapter(max_retries=retries))
 
 # Process each image URL starting from row 65 (index 64)
 for index, row in data.iterrows():
-    if index >= 65:  # Start from row 66
+    if index >= 226:  # Start from row 66
         url = row['image']  # Replace 'image' with your actual column name
         file_name = os.path.join(save_folder, f'image_{index}.jpg')
 
