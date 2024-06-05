@@ -9,6 +9,9 @@ import face_recognition
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
 
+TEST_DIR = "testing_dataset"
+OUTPUT_DIR = "output"
+
 
 def predict(X_img_path, knn_clf=None, model_path=None, distance_threshold=0.35):
     """
@@ -41,7 +44,7 @@ def predict(X_img_path, knn_clf=None, model_path=None, distance_threshold=0.35):
     if len(X_face_locations) == 0:
         return []
 
-    # Find encodings for faces in the test iamge
+    # Find encodings for faces in the test image
     faces_encodings = face_recognition.face_encodings(X_img, known_face_locations=X_face_locations)
 
     # Use the KNN model to find the best matches for the test face
@@ -52,13 +55,17 @@ def predict(X_img_path, knn_clf=None, model_path=None, distance_threshold=0.35):
     return [(pred, loc) if rec else ("unknown", loc) for pred, loc, rec in zip(knn_clf.predict(faces_encodings), X_face_locations, are_matches)]
 
 
-def crop_and_save(predictions, output_dir, img_path):
+def crop_and_save(predictions, img_path):
+    # Load image
     img = face_recognition.load_image_file(img_path)
 
+    # Get file name
     img_name = img_path.split('\\')[-1]
+
+    # Saving cropped image to their respective output folders, ignores faces predicted as unknown
     for name, (top, right, bottom, left) in predictions:
         if name != "unknown":
-            output_dest = f'{output_dir}/{name}'
+            output_dest = f'{OUTPUT_DIR}/{name}'
             if not os.path.exists(output_dest):
                 os.mkdir(output_dest)
             faceImg = img[top:bottom, left:right]
@@ -102,15 +109,13 @@ def show_prediction_labels_on_image(img_path, predictions):
 
 
 if __name__ == "__main__":
-    test_dir = "testing_dataset"
-    output_dir = "output"
 
-    if not os.path.exists(output_dir):
-        os.mkdir(output_dir)
+    if not os.path.exists(OUTPUT_DIR):
+        os.mkdir(OUTPUT_DIR)
 
     # For each image
-    for image_file in os.listdir(test_dir):
-        img_path = os.path.join(test_dir, image_file)
+    for image_file in os.listdir(TEST_DIR):
+        img_path = os.path.join(TEST_DIR, image_file)
 
         print("Looking for faces in {}".format(image_file))
 
@@ -119,11 +124,7 @@ if __name__ == "__main__":
         # Can configure distance_threshold for how strict the model is in facial recognition
         predictions = predict(img_path, model_path="trained_knn_model.clf")
 
-        crop_and_save(predictions, output_dir, img_path)
-
-        # Print results on the console
-        # for name, (top, right, bottom, left) in predictions:
-        #     print("- Found {} at ({}, {})".format(name, left, top))
+        crop_and_save(predictions, img_path)
 
         # Display results overlaid on an image
-        #show_prediction_labels_on_image(os.path.join(test_dir, image_file), predictions)
+        #show_prediction_labels_on_image(os.path.join(TEST_DIR, image_file), predictions)
