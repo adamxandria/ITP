@@ -1,8 +1,7 @@
 import cv2
 import face_recognition
 import os
-import matplotlib.pyplot as plt  
-
+import matplotlib.pyplot as plt
 
 
 def encode_face(image_path):
@@ -15,28 +14,38 @@ def encode_face(image_path):
     else:
         raise ValueError(f"No faces found in {image_path}")
 
+
 def detect_and_crop_target_face(image_path, target_encoding, output_path):
     # Load the image
     img = cv2.imread(image_path)
     # Convert the image to RGB
     rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    
+
     # Find all face locations and face encodings in the image
     face_locations = face_recognition.face_locations(rgb_img)
     face_encodings = face_recognition.face_encodings(rgb_img, face_locations)
-    
+
     # Find the face that matches the target encoding
     for (top, right, bottom, left), face_encoding in zip(face_locations, face_encodings):
         matches = face_recognition.compare_faces([target_encoding], face_encoding)
         if matches[0]:
+            # Calculate 5% margin from height
+            margin = int((bottom - top) * 0.05)
+            top, left = (top - margin), (left - margin)
+            bottom, right = (bottom + margin), (right + margin)
+
             # Crop the matching face
             face_crop = img[top:bottom, left:right]
+
+            # resize to 224x224 pixels according to DDPM paper
+            face_crop = cv2.resize(face_crop, (224, 224))
             # Save the cropped face image
             cv2.imwrite(output_path, face_crop)
             return face_crop
-    
+
     print(f"No matching faces found in {image_path}")
     return None
+
 
 # Paths to the input images and the output directory
 target_image_path = 'downloaded_images/Lawrence-Wong-2022.jpg'
