@@ -1,46 +1,28 @@
 import pandas as pd
 import requests
 import os
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
-from requests.exceptions import RequestException
 
-# Path to the CSV file
-csv_file = 'dataset_facebook-photos-scraper.csv'
-# Folder where images will be saved
-save_folder = 'downloaded_images'
+# Load the dataset
+file_path = 'anjing.csv'  # Update this with your actual file path
+data = pd.read_csv(file_path)
 
-# Create the directory if it doesn't exist
-if not os.path.exists(save_folder):
-    os.makedirs(save_folder)
+# Directory to save the images
+save_dir = 'dataset'
+os.makedirs(save_dir, exist_ok=True)
 
-# Load the CSV file
-data = pd.read_csv(csv_file)
+def download_image(url, save_path):
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        with open(save_path, 'wb') as f:
+            f.write(response.content)
+        print(f'Successfully downloaded {save_path}')
+    except requests.exceptions.RequestException as e:
+        print(f'Failed to download {url}: {e}')
 
-# Create a requests session
-session = requests.Session()
-# Retry strategy
-retries = Retry(total=5, backoff_factor=1, status_forcelist=[500, 502, 503, 504])
-# Mount it for both http and https usage
-session.mount('http://', HTTPAdapter(max_retries=retries))
-session.mount('https://', HTTPAdapter(max_retries=retries))
 
-# Process each image URL starting from row 65 (index 64)
 for index, row in data.iterrows():
-    if index >= 226:  # Start from row 66
-        url = row['image']  # Replace 'image' with your actual column name
-        file_name = os.path.join(save_folder, f'image_{index}.jpg')
-
-        try:
-            # Send a GET request to the image URL
-            response = session.get(url, verify=False)  # Set verify=False if you need to bypass SSL verification
-            if response.status_code == 200:
-                # Write the image to a file
-                with open(file_name, 'wb') as f:
-                    f.write(response.content)
-            else:
-                print(f"Failed to retrieve image from {url} with status code {response.status_code}")
-        except RequestException as e:
-            print(f"An error occurred while trying to retrieve {url}: {str(e)}")
-
-print("Download completed.")
+    image_url = row['image']
+    image_id = row['id']  # Or any unique identifier for the image
+    save_path = os.path.join(save_dir, f'{image_id}.jpg')
+    download_image(image_url, save_path)
